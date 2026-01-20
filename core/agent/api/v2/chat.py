@@ -14,6 +14,7 @@ from starlette.responses import StreamingResponse
 from agent.api.schemas_v2.bot_chat_inputs import Chat
 from agent.api.schemas_v2.bot_dsl import BotDsl
 from agent.api.v1.base_api import CompletionBase
+from agent.api.v2.bot_manage import _validate_tenant
 from agent.domain.models.bot import BotRelease
 from agent.exceptions.agent_exc import AgentInternalExc
 from agent.infra.app_auth import APPAuth
@@ -132,7 +133,7 @@ async def bot_chat(
         sp.set_attribute("bot_id", inputs.bot_id)
         sp.add_info_events({"bot-chat-inputs": inputs.model_dump_json(by_alias=True)})
 
-        await _validate_app_auth(x_consumer_username, sp)
+        await _validate_tenant(x_consumer_username)
         with session_getter(get_db_service()) as session:
             # Query Bot table data using bot_id
             bot_release = (
