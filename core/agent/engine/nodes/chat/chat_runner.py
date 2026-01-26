@@ -6,7 +6,7 @@ from common.otlp.log_trace.node_trace_log import NodeTraceLog
 from common.otlp.trace.span import Span
 from pydantic import Field
 
-from agent.api.schemas.agent_response import AgentResponse
+from api.schema.schemas.agent_response import AgentResponse
 from agent.engine.nodes.base import RunnerBase
 from agent.engine.nodes.chat.chat_prompt import CHAT_SYSTEM_TEMPLATE, CHAT_USER_TEMPLATE
 

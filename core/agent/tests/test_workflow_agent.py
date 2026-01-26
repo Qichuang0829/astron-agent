@@ -9,8 +9,8 @@ from common.otlp import sid as sid_module
 from common.otlp.trace.span import Span
 from starlette.responses import StreamingResponse
 
-from agent.api.schemas.llm_message import LLMMessage
-from agent.api.schemas.workflow_agent_inputs import (
+from api.schema.schemas.llm_message import LLMMessage
+from api.schema.schemas.workflow_agent_inputs import (
     CustomCompletionInputs,
     CustomCompletionInstructionInputs,
     CustomCompletionModelConfigInputs,

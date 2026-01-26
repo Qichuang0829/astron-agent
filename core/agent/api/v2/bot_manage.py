@@ -4,18 +4,17 @@ from datetime import datetime
 from typing import Annotated, Union
 
 import aiohttp
-from fastapi.openapi.models import APIKey
 from common.otlp.trace.span import Span
 from common.service import get_db_service
 from common.service.db.db_service import session_getter
 from fastapi import APIRouter, Header
 
-from agent.api.schemas_v2.bot_manage_inputs import (
+from api.schema.schemas_v2.bot_manage_inputs import (
     Auth,
     ProtocolSynchronization,
     Publish,
 )
-from agent.api.schemas_v2.bot_manage_response import BotResponse, build_bot_response
+from api.schema.schemas_v2.bot_manage_response import BotResponse, build_bot_response
 from agent.domain.models.bot import AppAuthDetail, Bot, BotRelease, BotTenant
 from agent.exceptions.bot_exc import (
     AppAuthFailedExc,
@@ -253,7 +252,6 @@ async def auth(
             await _validate_tenant(x_consumer_username)
             # response format {'sid': 'app0001912f@hf19b24c8fdd65741502', 'code': 0, 'message': 'success', 'data': [{'appid': '', 'name': '', 'is_disable': False, 'auth_list': [{'api_key': '', 'api_secret': ''}], 'desc': '星辰租户'}]}{'sid': 'app0001912f@hf19b24c8fdd65741502', 'code': 0, 'message': 'success', 'data': [{'appid': '', 'name': '星辰租户', 'is_disable': False, 'auth_list': [{'api_key': '', 'api_secret': ''}], 'desc': '星辰租户'}]}
             app_detail = await _validate_app_auth(inputs.app_id, sp)
-            print(app_detail)
 
             # Query app_detail firstly
             with session_getter(get_db_service()) as session:

@@ -10,8 +10,8 @@ from common.otlp.log_trace.node_trace_log import NodeTraceLog
 from common.otlp.trace.span import Span
 from pydantic import Field
 
-from agent.api.schemas.agent_response import AgentResponse, CotStep
-from agent.api.schemas.llm_message import LLMMessage, LLMMessages
+from api.schema.schemas.agent_response import AgentResponse, CotStep
+from api.schema.schemas.llm_message import LLMMessage, LLMMessages
 from agent.domain.models.base import BaseLLMModel
 from agent.engine.nodes.base import RunnerBase, Scratchpad
 from agent.engine.nodes.cot.cot_prompt import (

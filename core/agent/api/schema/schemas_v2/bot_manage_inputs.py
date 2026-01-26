@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from agent.api.schemas_v2.bot_dsl import BotDsl
+from api.schema.schemas_v2.bot_dsl import BotDsl
 
 
 class ProtocolSynchronization(BaseModel):

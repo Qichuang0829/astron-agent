@@ -13,13 +13,13 @@ from common.otlp.metrics.meter import Meter
 from common.otlp.trace.span import Span
 from pydantic import BaseModel, ConfigDict
 
-from agent.api.schemas.base_inputs import BaseInputs
-from agent.api.schemas.completion_chunk import (
+from api.schema.schemas.base_inputs import BaseInputs
+from api.schema.schemas.completion_chunk import (
     ReasonChatCompletionChunk,
     ReasonChoice,
     ReasonChoiceDelta,
 )
-from agent.api.schemas.node_trace_patch import NodeTracePatch
+from api.schema.schemas.node_trace_patch import NodeTracePatch
 from agent.exceptions.agent_exc import AgentInternalExc, AgentNormalExc
 
 

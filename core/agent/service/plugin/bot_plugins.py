@@ -9,7 +9,7 @@ from agent.service.plugin.mcp import McpPlugin, McpPluginRunner
 from agent.service.plugin.workflow import WorkflowPlugin, WorkflowPluginRunner
 from agent.service.plugin.knowledge import KnowledgePlugin, KnowledgePluginRunner
 from agent.service.plugin.link import LinkPlugin, LinkPluginRunner
-from agent.api.schemas_v2.bot_dsl import BotDsl, LinkMcpServerInputs, CusMcpServerInputs
+from api.schema.schemas_v2.bot_dsl import BotDsl, LinkMcpServerInputs, CusMcpServerInputs
 from common.otlp.trace.span import Span
 from common.service import get_db_service
 from common.service.db.db_service import session_getter

@@ -23,7 +23,7 @@ from loguru import logger
 from starlette.middleware.cors import CORSMiddleware
 
 from agent.api import router
-from agent.api.schemas.completion_chunk import ReasonChatCompletionChunk
+from api.schema.schemas.completion_chunk import ReasonChatCompletionChunk
 from agent.exceptions.agent_exc import AgentExc
 
 

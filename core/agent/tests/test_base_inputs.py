@@ -4,8 +4,8 @@ import pytest
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 
-from agent.api.schemas.base_inputs import BaseInputs, MetaDataInputs
-from agent.api.schemas.llm_message import LLMMessage
+from api.schema.schemas.base_inputs import BaseInputs, MetaDataInputs
+from api.schema.schemas.llm_message import LLMMessage
 
 
 class TestBaseInputsValidation:

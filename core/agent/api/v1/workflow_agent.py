@@ -7,7 +7,7 @@ from fastapi import APIRouter, Header
 from pydantic import ConfigDict
 from starlette.responses import StreamingResponse
 
-from agent.api.schemas.workflow_agent_inputs import CustomCompletionInputs
+from api.schema.schemas.workflow_agent_inputs import CustomCompletionInputs
 from agent.api.v1.base_api import CompletionBase
 from agent.service.builder.workflow_agent_builder import WorkflowAgentRunnerBuilder
 from agent.service.runner.workflow_agent_runner import WorkflowAgentRunner

@@ -1,11 +1,6 @@
-import asyncio
-import json
 from dataclasses import dataclass
-from typing import Any, cast
 
-from common.otlp.trace.span import Span
-
-from agent.api.schemas_v2.bot_chat_inputs import DebugChat
+from api.schema.schemas_v2.bot_chat_inputs import DebugChat
 from agent.service.builder.base_builder import BaseApiBuilder
 from agent.service.runner.debug_chat_runner import DebugChatRunner
 from agent.service.plugin.bot_plugins import BotPluginFactory

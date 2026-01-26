@@ -6,16 +6,16 @@ import pytest
 from fastapi import APIRouter
 
 from agent.api import router as api_router
-from agent.api.schemas.agent_response import AgentResponse, CotStep
-from agent.api.schemas.completion_chunk import (
+from api.schema.schemas.agent_response import AgentResponse, CotStep
+from api.schema.schemas.completion_chunk import (
     ReasonChatCompletionChunk,
     ReasonChoice,
     ReasonChoiceDelta,
     ReasonChoiceDeltaToolCall,
     ReasonChoiceDeltaToolCallFunction,
 )
-from agent.api.schemas.llm_message import LLMMessage, LLMMessages
-from agent.api.schemas.node_trace_patch import NodeTracePatch
+from api.schema.schemas.llm_message import LLMMessage, LLMMessages
+from api.schema.schemas.node_trace_patch import NodeTracePatch
 
 
 class TestRouterModule:

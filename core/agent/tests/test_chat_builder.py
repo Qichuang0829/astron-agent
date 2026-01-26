@@ -8,8 +8,8 @@ import pytest
 from common.otlp import sid as sid_module
 from common.otlp.trace.span import Span
 
-from agent.api.schemas_v2.bot_chat_inputs import Chat, MessageInputs
-from agent.api.schemas_v2.bot_dsl import (
+from api.schema.schemas_v2.bot_chat_inputs import Chat, MessageInputs
+from api.schema.schemas_v2.bot_dsl import (
     BotDsl,
     KnowledgeInputs,
     ModelInputs,
@@ -62,7 +62,7 @@ class TestChatRunnerBuilder:
     @pytest.fixture
     def dsl(self) -> BotDsl:
         """Create Dsl instance for testing"""
-        from agent.api.schemas_v2.bot_dsl import PluginInputs, RagInputs
+        from api.schema.schemas_v2.bot_dsl import PluginInputs, RagInputs
 
         return BotDsl(
             name="test_bot",
@@ -157,7 +157,7 @@ class TestChatRunnerBuilder:
         mock_cot_runner = MagicMock(spec=CotRunner)
 
         # Add plugin configuration to DSL
-        from agent.api.schemas_v2.bot_dsl import PluginInputs
+        from api.schema.schemas_v2.bot_dsl import PluginInputs
 
         plugin_inputs = PluginInputs()
         dsl.plugin = plugin_inputs

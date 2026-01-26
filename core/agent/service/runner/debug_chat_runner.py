@@ -8,14 +8,14 @@ from common.otlp.log_trace.node_trace_log import NodeTraceLog
 from common.otlp.trace.span import Span
 from pydantic import BaseModel, ConfigDict, Field
 
-from agent.api.schemas.agent_response import AgentResponse
-from agent.api.schemas.completion_chunk import (
+from api.schema.schemas.agent_response import AgentResponse
+from api.schema.schemas.completion_chunk import (
     ReasonChatCompletionChunk,
     ReasonChoiceDeltaToolCall,
     ReasonChoiceDeltaToolCallFunction,
 )
 from agent.engine.bot.runner import BotCotStep, BotRunner, BotAgentResponse
-from agent.api.schemas_v2.bot_debug_chat_response import (
+from api.schema.schemas_v2.bot_debug_chat_response import (
     BotDebugChatCompletionChunk,
     BotDebugChatChoice,
     BotDebugChatChoiceDelta,

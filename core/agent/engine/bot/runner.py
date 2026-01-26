@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from common.otlp.trace.span import Span
 from common.otlp.log_trace.node_trace_log import NodeTraceLog as NodeTrace
 from typing import Any, AsyncIterator, Union
-from agent.api.schemas.agent_response import BotAgentResponse
+from api.schema.schemas.agent_response import BotAgentResponse
 from agent.engine.nodes.base import RunnerBase
 from agent.engine.bot.prompt import BOT_TEMPLATE
 from agent.service.plugin.base import BasePlugin
@@ -13,7 +13,7 @@ from agent.service.plugin.link import LinkPlugin
 from agent.service.plugin.mcp import McpPlugin
 from agent.service.plugin.workflow import WorkflowPlugin
 from agent.service.plugin.knowledge import KnowledgePlugin
-from agent.api.schemas.llm_message import LLMMessage, LLMMessages
+from api.schema.schemas.llm_message import LLMMessage, LLMMessages
 from common.otlp.log_trace.base import Usage
 from common.otlp.log_trace.node_log import Data, NodeLog
 from common.exceptions.base import BaseExc

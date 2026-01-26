@@ -238,15 +238,6 @@ class BaseApiBuilder(BaseModel):
                     f"Normalized base_url: {base_url} -> {normalized_base_url}"
                 )
 
-            print("-------")
-            print(                {
-                    "model": model_name,
-                    "base_url": base_url,
-                    "normalized_base_url": normalized_base_url,
-                    "api_key": api_key,
-                    "app_id": app_id,
-                })
-            print("-------")
             sp.add_info_events(
                 {
                     "model": model_name,
@@ -287,5 +278,4 @@ class BaseApiBuilder(BaseModel):
                     max_retries=2,  # Retry failed requests twice
                 ),
             )
-            print("over create..")
             return model

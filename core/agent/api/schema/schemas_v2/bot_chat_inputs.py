@@ -2,8 +2,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from agent.api.schemas.base_inputs import BaseInputs
-from agent.api.schemas_v2.bot_dsl import BotDsl
+from api.schema.schemas.base_inputs import BaseInputs
+from api.schema.schemas_v2.bot_dsl import BotDsl
 
 
 class MessageInputs(BaseModel):

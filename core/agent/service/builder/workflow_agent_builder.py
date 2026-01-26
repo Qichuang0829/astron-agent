@@ -5,7 +5,7 @@ from typing import Any, cast
 
 from common.otlp.trace.span import Span
 
-from agent.api.schemas.workflow_agent_inputs import (
+from api.schema.schemas.workflow_agent_inputs import (
     CustomCompletionInputs,
     CustomCompletionPluginKnowledgeInputs,
 )

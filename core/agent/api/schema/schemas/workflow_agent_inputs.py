@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Union
 
 from pydantic import BaseModel, Field
 
-from agent.api.schemas.base_inputs import BaseInputs
+from api.schema.schemas.base_inputs import BaseInputs
 
 
 class CustomCompletionModelConfigInputs(BaseModel):

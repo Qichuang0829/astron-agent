@@ -10,20 +10,14 @@ from fastapi.responses import JSONResponse
 from pydantic import ConfigDict
 from starlette.responses import StreamingResponse
 
-from agent.api.schemas_v2.bot_chat_inputs import DebugChat
-from agent.api.schemas_v2.bot_dsl import BotDsl
+from api.schema.schemas_v2.bot_chat_inputs import DebugChat
+from api.schema.schemas_v2.bot_dsl import BotDsl
 from agent.api.v1.base_api import CompletionBase
 from agent.domain.models.bot import Bot, BotTenant
 from agent.exceptions.bot_exc import TenantNotFoundExc, BotNotFoundExc
 from agent.service.builder.debug_chat_builder import DebugChatRunnerBuilder
 from agent.service.runner.debug_chat_runner import DebugChatRunner
-from common.otlp.log_trace.node_trace_log import NodeTraceLog as NodeTrace
-from common.otlp.metrics.meter import Meter
-from common.exceptions.base import BaseExc
-from agent.exceptions.agent_exc import AgentInternalExc, AgentNormalExc
-from agent.api.base import RunContext
-import traceback
-from agent.api.schemas_v2.bot_debug_chat_response import BotDebugChatCompletionChunk
+from api.schema.schemas_v2.bot_debug_chat_response import BotDebugChatCompletionChunk
 
 debug_chat_router = APIRouter()
 
@@ -113,7 +107,7 @@ async def _validate_tenant(x_consumer_username: str) -> None:
 async def bot_debug_chat(
     x_consumer_username: Annotated[str, Header()],
     inputs: DebugChat,
-) -> StreamingResponse:
+) -> StreamingResponse | JSONResponse:
     """Agent execution - user mode
 
     Args:

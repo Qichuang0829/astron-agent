@@ -50,4 +50,32 @@ CREATE TABLE `bot_release` (
   KEY `union_bot_id` (`bot_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+DROP TABLE IF EXISTS `app_auth_detail`;
+CREATE TABLE `app_auth_detail` (
+  `id` bigint(19) NOT NULL COMMENT '主键id、雪花id',
+  `release_id` bigint(19) NOT NULL COMMENT '发布版本ID',
+  `app_id` varchar(32) NOT NULL COMMENT '应用标识',
+  `api_key` varchar(128) NOT NULL COMMENT 'key',
+  `api_secret` varchar(128) NOT NULL COMMENT 'secret',
+  `create_at` datetime NOT NULL COMMENT '创建时间',
+  `update_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `general_release_id` (`release_id`),
+  KEY `general_app_id` (`app_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+DROP TABLE IF EXISTS `tool_operation_detail`;
+CREATE TABLE `tool_operation_detail` (
+  `id` bigint(19) NOT NULL COMMENT '主键id、雪花id',
+  `tool_id` varchar(32) NOT NULL COMMENT '工具ID',
+  `operation_id` varchar(32) NOT NULL COMMENT 'OperationId',
+  `version` varchar(32) NOT NULL COMMENT '版本',
+  `method_schema` text NOT NULL COMMENT 'secret',
+  `create_at` datetime NOT NULL COMMENT '创建时间',
+  `update_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `general_tool_id` (`tool_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 select 'agent DATABASE initialization completed' as '';

@@ -10,7 +10,7 @@ from common.otlp import sid as sid_module
 from common.otlp.trace.span import Span
 from starlette.responses import StreamingResponse
 
-from agent.api.schemas_v2.bot_chat_inputs import DebugChat, MessageInputs
+from api.schema.schemas_v2.bot_chat_inputs import DebugChat, MessageInputs
 from agent.api.v2.debug_chat import (
     CustomChatCompletion,
     _validate_tenant,
@@ -47,7 +47,7 @@ class TestCustomChatCompletion:
     @pytest.fixture
     def debug_chat_inputs(self) -> DebugChat:
         """Create DebugChat input instance for testing"""
-        from agent.api.schemas_v2.bot_dsl import BotDsl, ModelInputs, ModelPropertiesInputs
+        from api.schema.schemas_v2.bot_dsl import BotDsl, ModelInputs, ModelPropertiesInputs
 
         dsl = BotDsl(
             name="test_bot",
@@ -336,7 +336,7 @@ class TestBotDebugChatEndpoint:
         mock_tenant_session: MagicMock,
     ) -> None:
         """Test bot debug chat endpoint when dsl is already provided"""
-        from agent.api.schemas_v2.bot_dsl import BotDsl, ModelInputs, ModelPropertiesInputs
+        from api.schema.schemas_v2.bot_dsl import BotDsl, ModelInputs, ModelPropertiesInputs
 
         provided_dsl = BotDsl(
             name="provided_bot",

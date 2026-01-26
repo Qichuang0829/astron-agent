@@ -6,12 +6,10 @@ from typing import Any, cast
 from agent.engine.bot.runner import BotRunner
 from common.otlp.trace.span import Span
 
-from agent.api.schemas_v2.bot_chat_inputs import Chat
-from agent.api.schemas_v2.bot_dsl import BotDsl, RagKnowledge
+from api.schema.schemas_v2.bot_chat_inputs import Chat
+from api.schema.schemas_v2.bot_dsl import BotDsl, RagKnowledge
 from agent.service.builder.base_builder import (
     BaseApiBuilder,
-    CotRunnerParams,
-    RunnerParams,
 )
 from agent.service.plugin.knowledge import KnowledgePluginFactory
 from agent.service.runner.debug_chat_runner import DebugChatRunner

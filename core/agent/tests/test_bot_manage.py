@@ -10,7 +10,7 @@ import aiohttp
 import pytest
 from common.otlp import sid as sid_module
 
-from agent.api.schemas_v2.bot_manage_inputs import (
+from api.schema.schemas_v2.bot_manage_inputs import (
     Auth,
     ProtocolSynchronization,
     Publish,
@@ -298,8 +298,8 @@ class TestProtocolSynchronization:
         self, mock_session: MagicMock, mock_tenant_session: MagicMock
     ) -> None:
         """Test creating a new bot via protocol synchronization"""
-        from agent.api.schemas_v2.bot_dsl import ModelInputs, ModelPropertiesInputs
-        from agent.api.schemas_v2.bot_manage_inputs import BotDsl
+        from api.schema.schemas_v2.bot_dsl import ModelInputs, ModelPropertiesInputs
+        from api.schema.schemas_v2.bot_manage_inputs import BotDsl
 
         dsl = BotDsl(
             name="test_bot",
@@ -336,8 +336,8 @@ class TestProtocolSynchronization:
         self, mock_session: MagicMock, mock_tenant_session: MagicMock
     ) -> None:
         """Test updating an existing bot via protocol synchronization"""
-        from agent.api.schemas_v2.bot_dsl import ModelInputs, ModelPropertiesInputs
-        from agent.api.schemas_v2.bot_manage_inputs import BotDsl
+        from api.schema.schemas_v2.bot_dsl import ModelInputs, ModelPropertiesInputs
+        from api.schema.schemas_v2.bot_manage_inputs import BotDsl
 
         dsl = BotDsl(
             name="test_bot",
@@ -387,8 +387,8 @@ class TestProtocolSynchronization:
     @pytest.mark.asyncio
     async def test_protocol_synchronization_auth_failed(self) -> None:
         """Test protocol synchronization when tenant validation fails"""
-        from agent.api.schemas_v2.bot_dsl import ModelInputs, ModelPropertiesInputs
-        from agent.api.schemas_v2.bot_manage_inputs import BotDsl
+        from api.schema.schemas_v2.bot_dsl import ModelInputs, ModelPropertiesInputs
+        from api.schema.schemas_v2.bot_manage_inputs import BotDsl
 
         dsl = BotDsl(
             name="test_bot",
@@ -424,8 +424,8 @@ class TestProtocolSynchronization:
     @pytest.mark.asyncio
     async def test_protocol_synchronization_exception(self) -> None:
         """Test protocol synchronization when exception occurs"""
-        from agent.api.schemas_v2.bot_dsl import ModelInputs, ModelPropertiesInputs
-        from agent.api.schemas_v2.bot_manage_inputs import BotDsl
+        from api.schema.schemas_v2.bot_dsl import ModelInputs, ModelPropertiesInputs
+        from api.schema.schemas_v2.bot_manage_inputs import BotDsl
 
         dsl = BotDsl(
             name="test_bot",

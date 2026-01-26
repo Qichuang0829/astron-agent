@@ -2,7 +2,7 @@ import json
 import time
 from typing import Annotated, Any, AsyncGenerator, cast, List
 
-from agent.api.schemas_v2.bot_debug_chat_response import BotDebugChatCompletionChunk
+from api.schema.schemas_v2.bot_debug_chat_response import BotDebugChatCompletionChunk
 from common.otlp.trace.span import Span
 from common.service import get_db_service
 from common.service.db.db_service import session_getter
@@ -11,22 +11,15 @@ from fastapi.responses import JSONResponse
 from pydantic import ConfigDict
 from starlette.responses import StreamingResponse
 
-from agent.api.schemas_v2.bot_chat_inputs import Chat
-from agent.api.schemas_v2.bot_dsl import BotDsl
+from api.schema.schemas_v2.bot_chat_inputs import Chat
+from api.schema.schemas_v2.bot_dsl import BotDsl
 from agent.api.v1.base_api import CompletionBase
-from agent.api.v2.bot_manage import _validate_tenant
-from agent.domain.models.bot import BotRelease
+from agent.domain.models.bot import BotRelease, Bot, AppAuthDetail
 from agent.exceptions.agent_exc import AgentInternalExc
 from agent.infra.app_auth import APPAuth
 from agent.service.builder.chat_builder import ChatRunnerBuilder
 from agent.service.runner.debug_chat_runner import DebugChatRunner
 
-from common.otlp.log_trace.node_trace_log import NodeTraceLog as NodeTrace
-from common.otlp.metrics.meter import Meter
-from common.exceptions.base import BaseExc
-from agent.exceptions.agent_exc import AgentInternalExc, AgentNormalExc
-from agent.api.base import RunContext
-import traceback
 
 chat_router = APIRouter()
 
@@ -105,6 +98,42 @@ async def _validate_app_auth(app_id: str, sp: Span) -> None:
     if len(app_detail.get("data", [])) == 0:
         raise AgentInternalExc(f"Cannot find appid:{app_id} authentication information")
 
+async def _validate_user(x_consumer_username: str, inputs: Chat) -> BotRelease:
+    with session_getter(get_db_service()) as session:
+        bot_release = (
+            session.query(BotRelease)
+            .filter(
+                BotRelease.bot_id == inputs.bot_id,
+                BotRelease.version == inputs.version_name,
+            )
+            .first()
+        )
+        if not bot_release:
+            raise AgentInternalExc(
+                f"Bot release with bot_id:{inputs.bot_id} version_name:{inputs.version_name} not found"
+            )
+
+        bot = session.query(Bot).filter(Bot.id == bot_release.bot_id).first()
+        if not bot:
+            raise AgentInternalExc(f"Bot:{inputs.bot_id} not found")
+        if bot.app_id == x_consumer_username:
+            return bot_release
+
+        auth_detail = (
+            session.query(AppAuthDetail)
+            .filter(
+                AppAuthDetail.release_id == bot_release.id,
+                AppAuthDetail.app_id == x_consumer_username,
+            )
+            .first()
+        )
+        if auth_detail:
+            return bot_release
+
+        raise AgentInternalExc(
+            f"User:{x_consumer_username} has no access to bot_id:{inputs.bot_id}"
+        )
+
 
 @chat_router.post(  # type: ignore[misc]
     "/bot/chat",
@@ -114,7 +143,7 @@ async def _validate_app_auth(app_id: str, sp: Span) -> None:
 async def bot_chat(
     x_consumer_username: Annotated[str, Header()],
     inputs: Chat,
-) -> StreamingResponse:
+) -> StreamingResponse | JSONResponse:
     """Agent execution - user mode
 
     Args:
@@ -133,111 +162,96 @@ async def bot_chat(
         sp.set_attribute("bot_id", inputs.bot_id)
         sp.add_info_events({"bot-chat-inputs": inputs.model_dump_json(by_alias=True)})
 
-        await _validate_tenant(x_consumer_username)
-        with session_getter(get_db_service()) as session:
-            # Query Bot table data using bot_id
-            bot_release = (
-                session.query(BotRelease)
-                .filter(
-                    BotRelease.bot_id == inputs.bot_id,
-                    BotRelease.version == inputs.version_name,
-                )
-                .first()
-            )
-            if not bot_release:
-                raise AgentInternalExc(
-                    f"Bot release with bot_id:{inputs.bot_id} version_name:{inputs.version_name} not found"
-                )
+        bot_release = await _validate_user(x_consumer_username, inputs)
+        completion = CustomChatCompletion(
+            app_id=x_consumer_username,
+            inputs=inputs,
+            log_caller=inputs.meta_data.caller,
+            span=span,
+            bot_id=str(bot_release.bot_id),
+            uid=inputs.uid,
+            question=inputs.get_last_message_content(),
+            dsl=BotDsl(**json.loads(bot_release.dsl)),
+        )
 
-            completion = CustomChatCompletion(
-                app_id=x_consumer_username,
-                inputs=inputs,
-                log_caller=inputs.meta_data.caller,
-                span=span,
-                bot_id="",
-                uid=inputs.uid,
-                question=inputs.get_last_message_content(),
-                dsl=BotDsl(**json.loads(bot_release.dsl)),
+        if inputs.stream:
+            async def generate() -> AsyncGenerator[str, None]:
+                """Generator for streaming response."""
+                async for response in completion.do_complete():
+                    yield response
+
+            return StreamingResponse(
+                generate(),
+                media_type="text/event-stream",
+                headers=headers,
             )
 
-            if inputs.stream:
-                async def generate() -> AsyncGenerator[str, None]:
-                    """Generator for streaming response."""
-                    async for response in completion.do_complete():
-                        yield response
+        aggregated_content: str = ""
+        aggregated_reasoning: str = ""
+        aggregated_tool_calls: List[Any] = []
+        aggregated_tool_call_responses: List[Any] = []
+        usage: Any = None
+        code: int = 0
+        message: str = "success"
+        resp_id: str = ""
+        model: str = ""
+        created: int = 0
 
-                return StreamingResponse(
-                    generate(),
-                    media_type="text/event-stream",
-                    headers=headers,
-                )
+        async for response in completion.do_complete():
+            if not response.startswith("data:"):
+                continue
+            payload_str = response[len("data:"):].strip()
+            if payload_str == "[DONE]":
+                continue
+            try:
+                payload = json.loads(payload_str)
+            except json.JSONDecodeError:
+                continue
 
-            aggregated_content: str = ""
-            aggregated_reasoning: str = ""
-            aggregated_tool_calls: List[Any] = []
-            aggregated_tool_call_responses: List[Any] = []
-            usage: Any = None
-            code: int = 0
-            message: str = "success"
-            resp_id: str = ""
-            model: str = ""
-            created: int = 0
+            if payload.get("object") != "chat.completion.chunk":
+                continue
 
-            async for response in completion.do_complete():
-                if not response.startswith("data:"):
-                    continue
-                payload_str = response[len("data:"):].strip()
-                if payload_str == "[DONE]":
-                    continue
-                try:
-                    payload = json.loads(payload_str)
-                except json.JSONDecodeError:
-                    continue
+            code = payload.get("code", code)
+            message = payload.get("message", message)
+            resp_id = payload.get("id", resp_id)
+            model = payload.get("model", model)
+            created = payload.get("created", created)
 
-                if payload.get("object") != "chat.completion.chunk":
-                    continue
+            choices = payload.get("choices") or []
+            delta = choices[0].get("delta", {}) if choices else {}
+            aggregated_content += delta.get("content", "") or ""
+            aggregated_reasoning += delta.get("reasoning_content", "") or ""
+            aggregated_tool_calls.extend(delta.get("tool_calls") or [])
+            aggregated_tool_call_responses.extend(
+                delta.get("tool_call_responses") or []
+            )
 
-                code = payload.get("code", code)
-                message = payload.get("message", message)
-                resp_id = payload.get("id", resp_id)
-                model = payload.get("model", model)
-                created = payload.get("created", created)
+            if "usage" in payload:
+                usage = payload.get("usage")
 
-                choices = payload.get("choices") or []
-                delta = choices[0].get("delta", {}) if choices else {}
-                aggregated_content += delta.get("content", "") or ""
-                aggregated_reasoning += delta.get("reasoning_content", "") or ""
-                aggregated_tool_calls.extend(delta.get("tool_calls") or [])
-                aggregated_tool_call_responses.extend(
-                    delta.get("tool_call_responses") or []
-                )
+        aggregated_payload = {
+            "code": code,
+            "message": message,
+            "id": resp_id,
+            "created": created or int(time.time() * 1000),
+            "choices": [
+                {
+                    "index": 0,
+                    "finish_reason": "stop",
+                    "delta": {
+                        "role": "assistant",
+                        "content": aggregated_content,
+                        "reasoning_content": aggregated_reasoning,
+                        "tool_calls": aggregated_tool_calls,
+                        "tool_call_responses": aggregated_tool_call_responses,
+                    },
+                }
+            ],
+            "object": "chat.completion.chunk",
+            "model": model,
+        }
 
-                if "usage" in payload:
-                    usage = payload.get("usage")
+        if usage is not None:
+            aggregated_payload["usage"] = usage
 
-            aggregated_payload = {
-                "code": code,
-                "message": message,
-                "id": resp_id,
-                "created": created or int(time.time() * 1000),
-                "choices": [
-                    {
-                        "index": 0,
-                        "finish_reason": "stop",
-                        "delta": {
-                            "role": "assistant",
-                            "content": aggregated_content,
-                            "reasoning_content": aggregated_reasoning,
-                            "tool_calls": aggregated_tool_calls,
-                            "tool_call_responses": aggregated_tool_call_responses,
-                        },
-                    }
-                ],
-                "object": "chat.completion.chunk",
-                "model": model,
-            }
-
-            if usage is not None:
-                aggregated_payload["usage"] = usage
-
-            return JSONResponse(content=aggregated_payload, headers=headers)
+        return JSONResponse(content=aggregated_payload, headers=headers)

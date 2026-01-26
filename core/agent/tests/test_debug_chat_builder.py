@@ -8,8 +8,8 @@ import pytest
 from common.otlp import sid as sid_module
 from common.otlp.trace.span import Span
 
-from agent.api.schemas_v2.bot_chat_inputs import DebugChat, MessageInputs
-from agent.api.schemas_v2.bot_dsl import (
+from api.schema.schemas_v2.bot_chat_inputs import DebugChat, MessageInputs
+from api.schema.schemas_v2.bot_dsl import (
     BotDsl,
     KnowledgeInputs,
     ModelInputs,
@@ -51,7 +51,7 @@ class TestDebugChatRunnerBuilder:
     @pytest.fixture
     def debug_chat_inputs(self) -> DebugChat:
         """Create DebugChat input instance for testing"""
-        from agent.api.schemas_v2.bot_dsl import PluginInputs, RagInputs
+        from api.schema.schemas_v2.bot_dsl import PluginInputs, RagInputs
 
         dsl = BotDsl(
             name="test_bot",
@@ -156,7 +156,7 @@ class TestDebugChatRunnerBuilder:
         mock_cot_runner = MagicMock(spec=CotRunner)
 
         # Add plugin configuration to DSL
-        from agent.api.schemas_v2.bot_dsl import PluginInputs
+        from api.schema.schemas_v2.bot_dsl import PluginInputs
 
         plugin_inputs = PluginInputs()
         if builder.inputs.dsl:

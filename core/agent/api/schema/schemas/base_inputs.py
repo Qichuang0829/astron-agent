@@ -3,7 +3,7 @@ from typing import Any
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field, model_validator
 
-from agent.api.schemas.llm_message import LLMMessage
+from api.schema.schemas.llm_message import LLMMessage
 from agent.exceptions.agent_exc import AgentInternalExc
 
 
