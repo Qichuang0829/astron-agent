@@ -16,6 +16,10 @@ class Publish(BaseModel):
     description: str = Field(default="")
 
 
+class PublishedDetailQuery(BaseModel):
+    version_id: int = Field(...)
+
+
 class Auth(BaseModel):
     version_id: int = Field(...)
     app_id: str = Field(...)

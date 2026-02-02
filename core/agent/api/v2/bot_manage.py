@@ -13,6 +13,7 @@ from api.schema.schemas_v2.bot_manage_inputs import (
     Auth,
     ProtocolSynchronization,
     Publish,
+    PublishedDetailQuery,
 )
 from api.schema.schemas_v2.bot_manage_response import BotResponse, build_bot_response
 from agent.domain.models.bot import AppAuthDetail, Bot, BotRelease, BotTenant
@@ -44,6 +45,18 @@ async def _validate_tenant(x_consumer_username: str) -> None:
         if not existing_tenant:
             raise TenantNotFoundExc(
                 f"Cannot find tenant id:{x_consumer_username} information"
+            )
+
+
+async def _validate_bot_owner(x_consumer_username: str, bot_id: int) -> None:
+    """Validate bot ownership for permission check"""
+    with session_getter(get_db_service()) as session:
+        bot = session.query(Bot).filter(Bot.id == bot_id).first()
+        if not bot:
+            raise BotNotFoundExc(f"Bot with id {bot_id} not found")
+        if bot.app_id != x_consumer_username:
+            raise BotPublishFailedExc(
+                f"User:{x_consumer_username} has no access to bot_id:{bot_id}"
             )
 
 
@@ -221,6 +234,53 @@ async def publish(
             error = BotPublishFailedExc(str(e))
 
         return build_bot_response(error)
+
+
+@bot_manage_router.post("/bot/publish/detail")
+async def published_detail(
+    x_consumer_username: Annotated[str, Header()], inputs: PublishedDetailQuery
+) -> BotResponse:
+    """Query published detail by version_id"""
+    error: BotExc = BotExc(*c_0)
+    resp_data: Union[dict] = dict()
+    span = Span(
+        app_id=x_consumer_username,
+    )
+    with span.start("PublishedDetail") as sp:
+        try:
+            sp.set_attribute("version_id", inputs.version_id)
+            sp.add_info_events(
+                {"published-detail-inputs": inputs.model_dump_json(by_alias=True)}
+            )
+
+            with session_getter(get_db_service()) as session:
+                bot_release = (
+                    session.query(BotRelease)
+                    .filter(BotRelease.id == inputs.version_id)
+                    .first()
+                )
+                if not bot_release:
+                    raise BotNotFoundExc(
+                        f"Bot release with version_id:{inputs.version_id} not found"
+                    )
+
+                await _validate_bot_owner(x_consumer_username, bot_release.bot_id)
+
+                resp_data = {
+                    "version_id": bot_release.id,
+                    "bot_id": bot_release.bot_id,
+                    "version_name": bot_release.version,
+                    "description": bot_release.description,
+                    "dsl": json.loads(bot_release.dsl),
+                    "create_at": bot_release.create_at,
+                    "update_at": bot_release.update_at,
+                }
+        except BotExc as e:
+            error = e
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            error = BotPublishFailedExc(str(e))
+
+        return build_bot_response(error, resp_data)
 
 
 @bot_manage_router.post("/bot/auth")  # type: ignore[misc]
