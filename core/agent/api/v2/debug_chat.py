@@ -123,109 +123,111 @@ async def bot_debug_chat(
 
     span = Span(app_id=x_consumer_username)
     with span.start("BotDebugChat") as sp:
-        sp.set_attribute("bot_id", inputs.bot_id)
+        if inputs.bot_id is not None:
+            sp.set_attribute("bot_id", inputs.bot_id)
         sp.add_info_events(
             {"bot-debug-chat-inputs": inputs.model_dump_json(by_alias=True)}
         )
 
         await _validate_tenant(x_consumer_username)
-        with session_getter(get_db_service()) as session:
-            # Query Bot table data using bot_id
-            bot = session.query(Bot).filter(Bot.id == inputs.bot_id).first()
-            if not bot:
-                raise BotNotFoundExc(f"Bot with id:{inputs.bot_id} not found")
-
+        if inputs.dsl is None:
+            with session_getter(get_db_service()) as session:
+                bot = session.query(Bot).filter(Bot.id == inputs.bot_id).first()
+                if bot and bot.dsl:
+                    inputs.dsl = BotDsl(**json.loads(bot.dsl))
             if inputs.dsl is None:
-                inputs.dsl = BotDsl(**json.loads(bot.dsl))
+                raise BotNotFoundExc(
+                    f"dsl is empty and bot id:{inputs.bot_id} not found"
+                )
 
-            completion = CustomChatCompletion(
-                app_id=x_consumer_username,
-                inputs=inputs,
-                log_caller=inputs.meta_data.caller,
-                span=span,
-                bot_id="",
-                uid=inputs.uid,
-                question=inputs.get_last_message_content(),
+        completion = CustomChatCompletion(
+            app_id=x_consumer_username,
+            inputs=inputs,
+            log_caller=inputs.meta_data.caller,
+            span=span,
+            bot_id="",
+            uid=inputs.uid,
+            question=inputs.get_last_message_content(),
+        )
+
+        if inputs.stream:
+            async def generate() -> AsyncGenerator[str, None]:
+                """Generator for streaming response."""
+                async for response in completion.do_complete():
+                    yield response
+
+            return StreamingResponse(
+                generate(),
+                media_type="text/event-stream",
+                headers=headers,
             )
 
-            if inputs.stream:
-                async def generate() -> AsyncGenerator[str, None]:
-                    """Generator for streaming response."""
-                    async for response in completion.do_complete():
-                        yield response
+        aggregated_content: str = ""
+        aggregated_reasoning: str = ""
+        aggregated_tool_calls: List[Any] = []
+        aggregated_tool_call_responses: List[Any] = []
+        usage: Any = None
+        code: int = 0
+        message: str = "success"
+        resp_id: str = ""
+        model: str = ""
+        created: int = 0
 
-                return StreamingResponse(
-                    generate(),
-                    media_type="text/event-stream",
-                    headers=headers,
-                )
+        async for response in completion.do_complete():
+            if not response.startswith("data:"):
+                continue
+            payload_str = response[len("data:"):].strip()
+            if payload_str == "[DONE]":
+                continue
+            try:
+                payload = json.loads(payload_str)
+            except json.JSONDecodeError:
+                continue
 
-            aggregated_content: str = ""
-            aggregated_reasoning: str = ""
-            aggregated_tool_calls: List[Any] = []
-            aggregated_tool_call_responses: List[Any] = []
-            usage: Any = None
-            code: int = 0
-            message: str = "success"
-            resp_id: str = ""
-            model: str = ""
-            created: int = 0
+            if payload.get("object") != "chat.completion.chunk":
+                continue
 
-            async for response in completion.do_complete():
-                if not response.startswith("data:"):
-                    continue
-                payload_str = response[len("data:"):].strip()
-                if payload_str == "[DONE]":
-                    continue
-                try:
-                    payload = json.loads(payload_str)
-                except json.JSONDecodeError:
-                    continue
+            code = payload.get("code", code)
+            message = payload.get("message", message)
+            resp_id = payload.get("id", resp_id)
+            model = payload.get("model", model)
+            created = payload.get("created", created)
 
-                if payload.get("object") != "chat.completion.chunk":
-                    continue
+            choices = payload.get("choices") or []
+            delta = choices[0].get("delta", {}) if choices else {}
+            aggregated_content += delta.get("content", "") or ""
+            aggregated_reasoning += delta.get("reasoning_content", "") or ""
+            aggregated_tool_calls.extend(delta.get("tool_calls") or [])
+            aggregated_tool_call_responses.extend(
+                delta.get("tool_call_responses") or []
+            )
 
-                code = payload.get("code", code)
-                message = payload.get("message", message)
-                resp_id = payload.get("id", resp_id)
-                model = payload.get("model", model)
-                created = payload.get("created", created)
+            if "usage" in payload:
+                usage = payload.get("usage")
 
-                choices = payload.get("choices") or []
-                delta = choices[0].get("delta", {}) if choices else {}
-                aggregated_content += delta.get("content", "") or ""
-                aggregated_reasoning += delta.get("reasoning_content", "") or ""
-                aggregated_tool_calls.extend(delta.get("tool_calls") or [])
-                aggregated_tool_call_responses.extend(
-                    delta.get("tool_call_responses") or []
-                )
+        aggregated_payload = {
+            "code": code,
+            "message": message,
+            "id": resp_id,
+            "created": created or int(time.time() * 1000),
+            "choices": [
+                {
+                    "index": 0,
+                    "finish_reason": "stop",
+                    "delta": {
+                        "role": "assistant",
+                        "content": aggregated_content,
+                        "reasoning_content": aggregated_reasoning,
+                        "tool_calls": aggregated_tool_calls,
+                        "tool_call_responses": aggregated_tool_call_responses,
+                    },
+                }
+            ],
+            "object": "chat.completion.chunk",
+            "model": model,
+        }
 
-                if "usage" in payload:
-                    usage = payload.get("usage")
+        if usage is not None:
+            aggregated_payload["usage"] = usage
 
-            aggregated_payload = {
-                "code": code,
-                "message": message,
-                "id": resp_id,
-                "created": created or int(time.time() * 1000),
-                "choices": [
-                    {
-                        "index": 0,
-                        "finish_reason": "stop",
-                        "delta": {
-                            "role": "assistant",
-                            "content": aggregated_content,
-                            "reasoning_content": aggregated_reasoning,
-                            "tool_calls": aggregated_tool_calls,
-                            "tool_call_responses": aggregated_tool_call_responses,
-                        },
-                    }
-                ],
-                "object": "chat.completion.chunk",
-                "model": model,
-            }
-
-            if usage is not None:
-                aggregated_payload["usage"] = usage
-
-            return JSONResponse(content=aggregated_payload, headers=headers)
+        return JSONResponse(content=aggregated_payload, headers=headers)

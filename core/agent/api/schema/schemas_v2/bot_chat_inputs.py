@@ -13,7 +13,7 @@ class MessageInputs(BaseModel):
 
 
 class DebugChat(BaseInputs):
-    bot_id: str = Field(...)
+    bot_id: Optional[str] = Field(default=None)
     uid: str = Field(...)
     conversation_id: str = Field(...)
     stream: bool = Field(...)
